@@ -11,6 +11,22 @@ def update_views():
     sc.doc.Views.Redraw()
 
 
+def layer(lname):
+    """Changes to given layer, creates if not yet existent."""
+    if not rs.IsLayer(lname):
+        rs.AddLayer(lname) 
+    rs.CurrentLayer(lname)
+
+
+def intersect_surfaces():
+    """Intersects all surfaces in model. Uses python cmd line, not interface."""
+    update_views()
+    layer('INTS')
+    rs.Command('_SelAll', echo=False)
+    rs.Command('_Intersect', echo=False)
+        
+
+
 def document():
     """Brute-force new document, discard all unsaved changes."""
     rs.DocumentModified(False)
@@ -37,13 +53,6 @@ def rect_corner_pts(midpt, edge_length, normal='x'):
             cpts[i][j] += sgns[isgns]*edge_length/2.
             isgns += 1
     return cpts
-    
-    
-def layer(lname):
-    """Changes to given layer, creates if not yet existent."""
-    if not rs.IsLayer(lname):
-        rs.AddLayer(lname) 
-    rs.CurrentLayer(lname)
 
 
 def cube(edge_length, prefix='', midpt=(0,0,0)):
@@ -129,6 +138,7 @@ def create_dfn(settings):
     if settings['HL3 cube']:
         cube(settings['HL3']*2., '_INT')
     radii, centers = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'], settings['HL2']*2.)
+    intersect_surfaces()
     update_views()
     print 'done...'
 
