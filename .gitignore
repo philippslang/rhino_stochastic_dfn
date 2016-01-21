@@ -1,6 +1,9 @@
 # Rhino files
 *.3dm
 
+# program outs
+*.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

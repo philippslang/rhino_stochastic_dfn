@@ -6,5 +6,6 @@
   "rmin": 5.0, 
   "exponent": -2.0,
   "N": 100,
+  "seed": 0,
   "HL3 cube": true
 }

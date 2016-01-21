@@ -111,10 +111,13 @@ def fracture(r, c, u):
 
 def populate(radii, centers, unorms):
     """Generates circle and surface objects on dedicated layers, name hardcoded here."""
+    lnames = []
     for i in range(len(radii)):
         lname = 'FRACTURE'+str(i)+'_S'
+        lnames += [lname]
         layer(lname)
         fracture(radii[i], centers[i], unorms[i])
+    return lnames
 
 
 def populate_powerlaw(N, rmin, rmax, exponent, edge_length, midpt=(0,0,0)):
@@ -122,8 +125,8 @@ def populate_powerlaw(N, rmin, rmax, exponent, edge_length, midpt=(0,0,0)):
     radii = power_law_variates(N, rmin, rmax, exponent)
     centers = uniform_centers(N, edge_length, midpt)
     unorms = uniform_normals(N)
-    populate(radii, centers, unorms)
-    return radii, centers
+    fnames = populate(radii, centers, unorms)
+    return radii, centers, fnames
 
 
 def corner_points(edge_length, midpt=(0,0,0)):
@@ -139,6 +142,23 @@ def corner_points(edge_length, midpt=(0,0,0)):
     rs.AddPoint((midpt[0]+hel,midpt[1]-hel,midpt[2]+hel))
 
 
+def freport_write_single(names, prop, fname):
+    lines = [names[i]+'\t'+str(prop[i])+'\n' for i in range(len(names))]
+    with open(fname, 'w') as f:
+        f.writelines(lines)
+
+
+def freport_write_triple(names, prop, fname):
+    lines = [names[i]+'\t'+str(prop[i][0])+'\t'+str(prop[i][1])+'\t'+str(prop[i][2])+'\n' for i in range(len(names))]
+    with open(fname, 'w') as f:
+        f.writelines(lines)
+
+
+def freport(names, radii, centers):
+    freport_write_single(names, radii, 'FractureNamesAndRadii.txt')
+    freport_write_triple(names, centers, 'FractureNamesAndCenters.txt')
+
+
 def create_dfn(settings):
     """
     Settings:
@@ -147,14 +167,16 @@ def create_dfn(settings):
     HL3 is half-length of inner box.
     """
     document()
+    random.seed(settings['seed'])
     cube(settings['HL1']*2.)
     corner_points(settings['HL1']*2.)
     if settings['HL3 cube']:
         cube(settings['HL3']*2., '_INT')
         corner_points(settings['HL3']*2.)
-    radii, centers = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'], settings['HL2']*2.)
+    radii, centers, fnames = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'], settings['HL2']*2.)
     intersect_surfaces()    
     update_views()
+    freport(fnames, radii, centers)
     print 'done...'
 
 
