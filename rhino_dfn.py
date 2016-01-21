@@ -73,15 +73,26 @@ def power_law_variates(N, vmin, vmax, exponent):
 def uniform_centers(N, edge_length, midpt):
     """Returns list of random rhino pts within cube of edge_length and midpoint."""
     hel = edge_length/2.
-    coords = [[midpt[xyz]+(random.random()-0.5)*hel for i in range(N)] for xyz in range(3)]
+    coords = [[midpt[xyz]+(random.random()-0.5)*2.*hel for i in range(N)] for xyz in range(3)]
     return [rh.Geometry.Point3d(coords[0][i], coords[1][i], coords[2][i]) for i in range(N)]
+
+
+def uniform_normals(N):
+    """Returns list of random rhino vectors."""
+    norms = [[random.random()-0.5 for i in range(N)] for xyz in range(3)]
+    pts = [rh.Geometry.Point3d(norms[0][i], norms[1][i], norms[2][i]) for i in range(N)]
+    origin = rh.Geometry.Point3d(0,0,0)
+    return [rs.VectorUnitize(rs.VectorCreate(pts[i], origin)) for i in range(N)]
 
 
 def populate_powerlaw(N, rmin, rmax, exponent, edge_length, midpt=(0,0,0)):
     """Populates cube space with truncated powerlaw size distributed fractures."""
-    rvars = power_law_variates(N, rmin, rmax, exponent)
+    radii = power_law_variates(N, rmin, rmax, exponent)
     centers = uniform_centers(N, edge_length, midpt)
-    return rvars, centers
+    unorms = uniform_normals(N)
+    planes = [rs.PlaneFromNormal(centers[i], unorms[i]) for i in range(N)]
+    circles = [rs.AddCircle(planes[i], radii[i]) for i in range(N)]
+    return radii, centers
 
 
 def create_dfn(settings):
@@ -93,8 +104,10 @@ def create_dfn(settings):
     """
     document()
     cube(settings['HL1']*2.)
-    cube(settings['HL3']*2., '_INT')
+    if settings['HL3 cube']:
+        cube(settings['HL3']*2., '_INT')
     radii, centers = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'], settings['HL2']*2.)
+    update_views()
 
 
 if __name__ == '__main__':
