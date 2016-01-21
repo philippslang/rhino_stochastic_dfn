@@ -1,0 +1,16 @@
+{
+  "density": 0.0001, 
+  "dome": false, 
+  "half length": 150.0, 
+  "height scaling factor": 0.29, 
+  "opposing walls distance": 7.0, 
+  "orientation mean": 0.0, 
+  "orientation sigma": 10.0, 
+  "ridges aspect ratio": 20.0, 
+  "ridges bending angle": 30.0, 
+  "rmax": 2.0, 
+  "rmin": 1.0, 
+  "rsigma": 1.5, 
+  "shear angle": 10.0, 
+  "walls": 10
+}
