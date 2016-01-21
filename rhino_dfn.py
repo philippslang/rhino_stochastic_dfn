@@ -3,7 +3,7 @@ import rhinoscriptsyntax as rs
 import scriptcontext as sc
 import json
 import copy
-
+import random
 
 def update_views():
     """Applies rendering and redraws all objects."""
@@ -47,6 +47,7 @@ def layer(lname):
 
 
 def cube(edge_length, prefix='', midpt=(0,0,0)):
+    """Creates cube surfaces with hardcoded layer convention of BOTTOM etc..."""
     midpts = [rh.Geometry.Point3d(midpt[0]-edge_length/2., midpt[1], midpt[2]),
               rh.Geometry.Point3d(midpt[0]+edge_length/2., midpt[1], midpt[2]),
               rh.Geometry.Point3d(midpt[0], midpt[1]-edge_length/2., midpt[2]),
@@ -63,9 +64,26 @@ def cube(edge_length, prefix='', midpt=(0,0,0)):
         surfid = surf(cpts)
 
 
+def power_law_variates(N, vmin, vmax, exponent):
+    """Returns list of powerlaw distributed variates within bounds."""
+    yvars = [random.random() for i in range(N)]
+    return [((vmax**(exponent+1.) - vmin**(exponent+1.))*y + vmin**(exponent+1.))**(1./(exponent+1.)) for y in yvars]
+
+
+def uniform_centers(N, edge_length, midpt):
+    """Returns list of random rhino pts within cube of edge_length and midpoint."""
+    hel = edge_length/2.
+    coords = [[midpt[xyz]+(random.random()-0.5)*hel for i in range(N)] for xyz in range(3)]
+    return [rh.Geometry.Point3d(coords[0][i], coords[1][i], coords[2][i]) for i in range(N)]
+
+
 def populate_powerlaw(N, rmin, rmax, exponent, edge_length, midpt=(0,0,0)):
-    pass
-     
+    """Populates cube space with truncated powerlaw size distributed fractures."""
+    rvars = power_law_variates(N, rmin, rmax, exponent)
+    centers = uniform_centers(N, edge_length, midpt)
+    return rvars, centers
+
+
 def create_dfn(settings):
     """
     Settings:
@@ -76,7 +94,8 @@ def create_dfn(settings):
     document()
     cube(settings['HL1']*2.)
     cube(settings['HL3']*2., '_INT')
-    populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'], settings['HL2']*2.)
+    radii, centers = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'], settings['HL2']*2.)
+
 
 if __name__ == '__main__':
     with open('rhino_settings.json', 'r') as f:
