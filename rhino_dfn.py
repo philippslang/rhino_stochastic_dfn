@@ -24,7 +24,7 @@ def intersect_surfaces():
     layer('INTS')
     rs.Command('_SelAll', echo=False)
     rs.Command('_Intersect', echo=False)
-        
+    rs.UnselectAllObjects()
 
 
 def document():
@@ -126,6 +126,19 @@ def populate_powerlaw(N, rmin, rmax, exponent, edge_length, midpt=(0,0,0)):
     return radii, centers
 
 
+def corner_points(edge_length, midpt=(0,0,0)):
+    layer('Default')
+    hel = edge_length/2.
+    rs.AddPoint((midpt[0]+hel,midpt[1]+hel,midpt[2]+hel))
+    rs.AddPoint((midpt[0]+hel,midpt[1]+hel,midpt[2]-hel))
+    rs.AddPoint((midpt[0]+hel,midpt[1]-hel,midpt[2]-hel))
+    rs.AddPoint((midpt[0]-hel,midpt[1]-hel,midpt[2]-hel))
+    rs.AddPoint((midpt[0]-hel,midpt[1]-hel,midpt[2]+hel))
+    rs.AddPoint((midpt[0]-hel,midpt[1]+hel,midpt[2]+hel))
+    rs.AddPoint((midpt[0]-hel,midpt[1]+hel,midpt[2]-hel))
+    rs.AddPoint((midpt[0]+hel,midpt[1]-hel,midpt[2]+hel))
+
+
 def create_dfn(settings):
     """
     Settings:
@@ -135,10 +148,12 @@ def create_dfn(settings):
     """
     document()
     cube(settings['HL1']*2.)
+    corner_points(settings['HL1']*2.)
     if settings['HL3 cube']:
         cube(settings['HL3']*2., '_INT')
+        corner_points(settings['HL3']*2.)
     radii, centers = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'], settings['HL2']*2.)
-    intersect_surfaces()
+    intersect_surfaces()    
     update_views()
     print 'done...'
 
