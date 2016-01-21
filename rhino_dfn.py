@@ -63,11 +63,20 @@ def cube(edge_length, prefix='', midpt=(0,0,0)):
         surfid = surf(cpts)
 
 
+def populate_powerlaw(N, rmin, rmax, exponent, edge_length, midpt=(0,0,0)):
+    pass
+     
 def create_dfn(settings):
+    """
+    Settings:
+    HL1 is half-length of outer box.
+    HL2 is half-length of fracture center box.
+    HL3 is half-length of inner box.
+    """
     document()
-    cube(settings['outer edge length'])
-    cube(settings['outer edge length']-2*settings['rmax'], '_INT')
-
+    cube(settings['HL1']*2.)
+    cube(settings['HL3']*2., '_INT')
+    populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'], settings['HL2']*2.)
 
 if __name__ == '__main__':
     with open('rhino_settings.json', 'r') as f:
