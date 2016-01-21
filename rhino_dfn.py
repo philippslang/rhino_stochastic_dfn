@@ -85,13 +85,35 @@ def uniform_normals(N):
     return [rs.VectorUnitize(rs.VectorCreate(pts[i], origin)) for i in range(N)]
 
 
+def fracture_perimeter(p, r):
+    """Fracture perimeter determines shape, circle here."""
+    circ = rh.Geometry.Circle(p, r)
+    sc.doc.Objects.AddCircle(circ)
+    return circ
+
+
+def fracture(r, c, u):
+    """Adds fracture curve and surface, dispatches to fracture_perimeter for shape."""
+    p = rs.PlaneFromNormal(c, u)
+    fp = fracture_perimeter(p, r)
+    crv = fp.ToNurbsCurve()
+    sc.doc.Objects.AddBrep(rh.Geometry.Brep.CreatePlanarBreps(crv)[0])
+
+
+def populate(radii, centers, unorms):
+    """Generates circle and surface objects on dedicated layers, name hardcoded here."""
+    for i in range(len(radii)):
+        lname = 'FRACTURE'+str(i)+'_S'
+        layer(lname)
+        fracture(radii[i], centers[i], unorms[i])
+
+
 def populate_powerlaw(N, rmin, rmax, exponent, edge_length, midpt=(0,0,0)):
     """Populates cube space with truncated powerlaw size distributed fractures."""
     radii = power_law_variates(N, rmin, rmax, exponent)
     centers = uniform_centers(N, edge_length, midpt)
     unorms = uniform_normals(N)
-    planes = [rs.PlaneFromNormal(centers[i], unorms[i]) for i in range(N)]
-    circles = [rs.AddCircle(planes[i], radii[i]) for i in range(N)]
+    populate(radii, centers, unorms)
     return radii, centers
 
 
@@ -108,6 +130,7 @@ def create_dfn(settings):
         cube(settings['HL3']*2., '_INT')
     radii, centers = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'], settings['HL2']*2.)
     update_views()
+    print 'done...'
 
 
 if __name__ == '__main__':
