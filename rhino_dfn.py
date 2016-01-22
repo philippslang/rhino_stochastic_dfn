@@ -128,7 +128,6 @@ def populate(radii, centers, unorms, perimpts=0, polygon=False):
         perim_id, srf_id = fracture(radii[i], centers[i], unorms[i])
         if perimpts:
             ppts = perimeter_pts(perim_id, perimpts)
-            print ppts
             if polygon: # delete circle and replace by polygon, this should be optimized
                 ppts.append(ppts[0]) # close polygon
                 rs.DeleteObjects([perim_id, srf_id])
