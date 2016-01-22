@@ -1,11 +1,12 @@
 {
-  "HL1": 82.5,
-  "HL2": 52.5,
+  "HL1": 52.5,
+  "HL2": 37.5,
   "HL3": 37.5,  
   "rmax": 15.0, 
   "rmin": 5.0, 
   "exponent": -2.0,
-  "N": 100,
+  "N": 200,
   "seed": 0,
-  "HL3 cube": true
+  "HL3 cube": false,
+  "perimeter points": 6
 }

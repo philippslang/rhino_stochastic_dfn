@@ -4,6 +4,8 @@ import scriptcontext as sc
 import json
 import copy
 import random
+import math
+
 
 def update_views():
     """Applies rendering and redraws all objects."""
@@ -19,7 +21,7 @@ def layer(lname):
 
 
 def intersect_surfaces():
-    """Intersects all surfaces in model. Uses python cmd line, not interface."""
+    """Intersects all surfaces in model. Uses python cmd line, not api."""
     update_views()
     layer('INTS')
     rs.Command('_SelAll', echo=False)
@@ -96,9 +98,9 @@ def uniform_normals(N):
 
 def fracture_perimeter(p, r):
     """Fracture perimeter determines shape, circle here."""
-    circ = rh.Geometry.Circle(p, r)
-    sc.doc.Objects.AddCircle(circ)
-    return circ
+    perim = rh.Geometry.Circle(p, r)
+    sc.doc.Objects.AddCircle(perim)
+    return perim
 
 
 def fracture(r, c, u):
@@ -106,26 +108,36 @@ def fracture(r, c, u):
     p = rs.PlaneFromNormal(c, u)
     fp = fracture_perimeter(p, r)
     crv = fp.ToNurbsCurve()
-    sc.doc.Objects.AddBrep(rh.Geometry.Brep.CreatePlanarBreps(crv)[0])
+    srf = sc.doc.Objects.AddBrep(rh.Geometry.Brep.CreatePlanarBreps(crv)[0])
+    return crv, srf
 
 
-def populate(radii, centers, unorms):
+def perimeter_pts(p, r, ptsno):
+    """Places points in equidistance segments along circular perimeter."""
+    pnorm = 2.*math.pi*r
+    sleng = pnorm/ptsno
+    return rs.DivideCurve(p, ptsno, create_points=True)
+
+
+def populate(radii, centers, unorms, perimpts=0):
     """Generates circle and surface objects on dedicated layers, name hardcoded here."""
     lnames = []
     for i in range(len(radii)):
         lname = 'FRACTURE'+str(i)+'_S'
         lnames += [lname]
         layer(lname)
-        fracture(radii[i], centers[i], unorms[i])
+        perim, srf = fracture(radii[i], centers[i], unorms[i])
+        if perimpts:
+            perimeter_pts(perim, radii[i], perimpts)
     return lnames
 
 
-def populate_powerlaw(N, rmin, rmax, exponent, edge_length, midpt=(0,0,0)):
+def populate_powerlaw(N, rmin, rmax, exponent, edge_length, perimpts=0, midpt=(0,0,0)):
     """Populates cube space with truncated powerlaw size distributed fractures."""
     radii = power_law_variates(N, rmin, rmax, exponent)
     centers = uniform_centers(N, edge_length, midpt)
     unorms = uniform_normals(N)
-    fnames = populate(radii, centers, unorms)
+    fnames = populate(radii, centers, unorms, perimpts)
     return radii, centers, fnames
 
 
@@ -173,7 +185,9 @@ def create_dfn(settings):
     if settings['HL3 cube']:
         cube(settings['HL3']*2., '_INT')
         corner_points(settings['HL3']*2.)
-    radii, centers, fnames = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'], settings['HL2']*2.)
+    radii, centers, fnames = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], 
+                                               settings['exponent'], settings['HL2']*2.,
+                                               settings['perimeter points'])
     intersect_surfaces()    
     update_views()
     freport(fnames, radii, centers)
