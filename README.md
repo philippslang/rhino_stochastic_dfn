@@ -20,7 +20,7 @@ Controlls in `rhino_settings.json`, needs to be in wrking directory. Script call
 }
 ```
 
-Hashtag comments in the code above have to be removed as they are not JSON compatible. The parameters `HL1-3` can be illustrated as follows
+Hashtag comments in the code above have to be removed as they are not JSON compatible. The parameters `HL1-3` can be illustrated as follows. If `"HL3 cube": false` no inner cube will be created and `"HL3"` is ignored, ie, need not be in the JSON settings file.
 
 <p align="left">
   <img src="https://raw.githubusercontent.com/plang85/rhino_stochastic_dfn/master/doc/rhino_dfn.png" height="400">
