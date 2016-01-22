@@ -8,5 +8,6 @@
   "N": 200,
   "seed": 0,
   "HL3 cube": false,
-  "perimeter points": 6
+  "perimeter points": 6,
+  "polygon": true
 }

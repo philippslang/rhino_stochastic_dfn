@@ -96,48 +96,53 @@ def uniform_normals(N):
     return [rs.VectorUnitize(rs.VectorCreate(pts[i], origin)) for i in range(N)]
 
 
-def fracture_perimeter(p, r):
+def fracture_perimeter(plane, radius):
     """Fracture perimeter determines shape, circle here."""
-    perim = rh.Geometry.Circle(p, r)
-    sc.doc.Objects.AddCircle(perim)
-    return perim
+    perim = rh.Geometry.Circle(plane, radius)
+    perim_id = sc.doc.Objects.AddCircle(perim)
+    return perim, perim_id
 
 
-def fracture(r, c, u):
+def fracture(radius, cener_pt, unormal):
     """Adds fracture curve and surface, dispatches to fracture_perimeter for shape."""
-    p = rs.PlaneFromNormal(c, u)
-    fp = fracture_perimeter(p, r)
-    crv = fp.ToNurbsCurve()
-    srf = sc.doc.Objects.AddBrep(rh.Geometry.Brep.CreatePlanarBreps(crv)[0])
-    return crv, srf
+    plane = rs.PlaneFromNormal(cener_pt, unormal)
+    perim, perim_id = fracture_perimeter(plane, radius)
+    perim_nrbs = perim.ToNurbsCurve()  
+    srf = rh.Geometry.Brep.CreatePlanarBreps(perim_nrbs)[0]
+    srf_id = sc.doc.Objects.AddBrep(srf)
+    return perim_id, srf_id
 
 
-def perimeter_pts(p, r, ptsno):
+def perimeter_pts(perim_id, ptsno):
     """Places points in equidistance segments along circular perimeter."""
-    pnorm = 2.*math.pi*r
-    sleng = pnorm/ptsno
-    return rs.DivideCurve(p, ptsno, create_points=True)
+    return rs.DivideCurve(perim_id, ptsno, create_points=True)
 
 
-def populate(radii, centers, unorms, perimpts=0):
+def populate(radii, centers, unorms, perimpts=0, polygon=False):
     """Generates circle and surface objects on dedicated layers, name hardcoded here."""
     lnames = []
     for i in range(len(radii)):
         lname = 'FRACTURE'+str(i)+'_S'
         lnames += [lname]
         layer(lname)
-        perim, srf = fracture(radii[i], centers[i], unorms[i])
+        perim_id, srf_id = fracture(radii[i], centers[i], unorms[i])
         if perimpts:
-            perimeter_pts(perim, radii[i], perimpts)
+            ppts = perimeter_pts(perim_id, perimpts)
+            print ppts
+            if polygon: # delete circle and replace by polygon, this should be optimized
+                ppts.append(ppts[0]) # close polygon
+                rs.DeleteObjects([perim_id, srf_id])
+                perimp_id = rs.AddPolyline(ppts)
+                srfp_id = rs.AddPlanarSrf(perimp_id)
     return lnames
 
 
-def populate_powerlaw(N, rmin, rmax, exponent, edge_length, perimpts=0, midpt=(0,0,0)):
+def populate_powerlaw(N, rmin, rmax, exponent, edge_length, perimpts=0, midpt=(0,0,0), polygon=False):
     """Populates cube space with truncated powerlaw size distributed fractures."""
     radii = power_law_variates(N, rmin, rmax, exponent)
     centers = uniform_centers(N, edge_length, midpt)
     unorms = uniform_normals(N)
-    fnames = populate(radii, centers, unorms, perimpts)
+    fnames = populate(radii, centers, unorms, perimpts, polygon)
     return radii, centers, fnames
 
 
@@ -187,11 +192,10 @@ def create_dfn(settings):
         corner_points(settings['HL3']*2.)
     radii, centers, fnames = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], 
                                                settings['exponent'], settings['HL2']*2.,
-                                               settings['perimeter points'])
+                                               settings['perimeter points'], polygon=settings['polygon'])
     intersect_surfaces()    
     update_views()
     freport(fnames, radii, centers)
-    print 'done...'
 
 
 if __name__ == '__main__':
