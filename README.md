@@ -26,3 +26,4 @@ Hashtag comments in the code above have to be removed as they are not JSON compa
   <img src="https://raw.githubusercontent.com/plang85/rhino_stochastic_dfn/master/doc/rhino_dfn.png" height="400">
   <br/>
 </p>
+For legacy support reasons this program outputs `FractureNamesAndRadii.txt` and `FractureNamesAndCenters.txt`.
