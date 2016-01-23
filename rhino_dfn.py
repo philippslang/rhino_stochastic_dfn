@@ -122,7 +122,7 @@ def populate(radii, centers, unorms, perimpts=0, polygon=False):
     """Generates circle and surface objects on dedicated layers, name hardcoded here."""
     lnames = []
     for i in range(len(radii)):
-        lname = 'FRACTURE'+str(i)+'_S'
+        lname = 'FRACTURE{:0>5d}_S'.format(i)
         lnames += [lname]
         layer(lname)
         perim_id, srf_id = fracture(radii[i], centers[i], unorms[i])
