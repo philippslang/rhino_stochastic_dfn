@@ -6,8 +6,8 @@
   "rmin": 5.0, 
   "exponent": -2.0,
   "N": 200,
-  "seed": 0,
+  "seed": 1,
   "HL3 cube": true,
-  "perimeter points": 6,
-  "polygon": true
+  "perimeter points": 8,
+  "polygon": false
 }

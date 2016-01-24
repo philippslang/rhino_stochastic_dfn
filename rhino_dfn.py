@@ -6,6 +6,11 @@ import copy
 import random
 import math
 
+class srfc_guids:
+    def __init__(self):
+        self.fractures = []
+        self.boxes = []
+
 
 def update_views():
     """Applies rendering and redraws all objects."""
@@ -20,11 +25,16 @@ def layer(lname):
     rs.CurrentLayer(lname)
 
 
-def intersect_surfaces():
+def intersect_surfaces(guids):
     """Intersects all surfaces in model. Uses python cmd line, not api."""
     update_views()
+    rs.UnselectAllObjects()
+    layer('INTS_BOX')
+    rs.SelectObjects(guids.boxes)
+    rs.Command('_Intersect', echo=False)
+    rs.UnselectAllObjects()
     layer('INTS')
-    rs.Command('_SelAll', echo=False)
+    rs.SelectObjects(guids.fractures)
     rs.Command('_Intersect', echo=False)
     rs.UnselectAllObjects()
 
@@ -69,10 +79,13 @@ def cube(edge_length, prefix='', midpt=(0,0,0)):
     layers = ['LEFT', 'RIGHT', 'FRONT', 'BACK', 'BOTTOM', 'TOP']
     if prefix:
         layers = [l+prefix for l in layers]
+    surf_ids = []
     for i in range(6):
         layer(layers[i])
         cpts = rect_corner_pts(midpts[i], edge_length, normal=normals[i])
         surfid = surf(cpts)
+        surf_ids += [surfid]
+    return surf_ids
 
 
 def power_law_variates(N, vmin, vmax, exponent):
@@ -120,7 +133,7 @@ def perimeter_pts(perim_id, ptsno):
 
 def populate(radii, centers, unorms, perimpts=0, polygon=False):
     """Generates circle and surface objects on dedicated layers, name hardcoded here."""
-    lnames = []
+    lnames, srf_ids = [], []
     for i in range(len(radii)):
         lname = 'FRACTURE{:0>5d}_S'.format(i)
         lnames += [lname]
@@ -132,8 +145,9 @@ def populate(radii, centers, unorms, perimpts=0, polygon=False):
                 ppts.append(ppts[0]) # close polygon
                 rs.DeleteObjects([perim_id, srf_id])
                 perimp_id = rs.AddPolyline(ppts)
-                srfp_id = rs.AddPlanarSrf(perimp_id)
-    return lnames
+                srf_id = rs.AddPlanarSrf(perimp_id)
+        srf_ids.append(srf_id)
+    return lnames, srf_ids
 
 
 def populate_powerlaw(N, rmin, rmax, exponent, edge_length, perimpts=0, midpt=(0,0,0), polygon=False):
@@ -141,8 +155,8 @@ def populate_powerlaw(N, rmin, rmax, exponent, edge_length, perimpts=0, midpt=(0
     radii = power_law_variates(N, rmin, rmax, exponent)
     centers = uniform_centers(N, edge_length, midpt)
     unorms = uniform_normals(N)
-    fnames = populate(radii, centers, unorms, perimpts, polygon)
-    return radii, centers, fnames
+    fnames, srf_ids = populate(radii, centers, unorms, perimpts, polygon)
+    return radii, centers, fnames, srf_ids
 
 
 def corner_points(edge_length, midpt=(0,0,0)):
@@ -183,16 +197,20 @@ def create_dfn(settings):
     HL3 is half-length of inner box.
     """
     document()
+    guids = srfc_guids()
     random.seed(settings['seed'])
-    cube(settings['HL1']*2.)
+    bsrf_ids = cube(settings['HL1']*2.)
+    guids.boxes = bsrf_ids
     corner_points(settings['HL1']*2.)
     if settings['HL3 cube']:
-        cube(settings['HL3']*2., '_INT')
+        bsrf_ids = cube(settings['HL3']*2., '_INT')
+        guids.boxes += bsrf_ids
         corner_points(settings['HL3']*2.)
-    radii, centers, fnames = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], 
-                                               settings['exponent'], settings['HL2']*2.,
-                                               settings['perimeter points'], polygon=settings['polygon'])
-    intersect_surfaces()    
+    radii, centers, fnames, fsrf_ids = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], 
+                                                         settings['exponent'], settings['HL2']*2.,
+                                                         settings['perimeter points'], polygon=settings['polygon'])
+    guids.fractures = fsrf_ids
+    intersect_surfaces(guids)
     update_views()
     freport(fnames, radii, centers)
 
