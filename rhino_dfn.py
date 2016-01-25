@@ -42,6 +42,8 @@ def intersect_surfaces(guids):
         if rs.IsCurve(intid):
             rs.AddPoint(rs.CurveStartPoint(intid))
             rs.AddPoint(rs.CurveEndPoint(intid))
+    rs.SelectObjects(frac_isect_ids)
+    rs.Command('_Intersect', echo=False)
 
 
 def document():
