@@ -36,7 +36,14 @@ def intersect_surfaces(guids):
     layer('INTS')
     rs.SelectObjects(guids.fractures)
     rs.Command('_Intersect', echo=False)
+    frac_isect_ids = rs.LastCreatedObjects()
     rs.UnselectAllObjects()
+    for intid in frac_isect_ids:
+        if rs.IsCurve(intid):
+            rs.AddPoint(rs.CurveStartPoint(intid))
+            rs.AddPoint(rs.CurveEndPoint(intid))
+
+    
 
 
 def document():
@@ -184,10 +191,24 @@ def freport_write_triple(names, prop, fname):
         f.writelines(lines)
 
 
-def freport(names, radii, centers):
+def fracture_centers_inside(names, radii, centers, edge_length, midpt=(0,0,0)):
+    hel = edge_length/2.
+    names_i, radii_i = [], []
+    for i in range(len(names)):
+        pt = centers[i]
+        inside = [pt[xyz] >= midpt[xyz]-hel and pt[xyz] <= midpt[xyz]+hel for xyz in range(3)]
+        if not False in inside:
+            names_i.append(names[i])
+            radii_i.append(radii[i])
+    return names_i, radii_i
+
+
+def freport(names, radii, centers, edge_length, midpt=(0,0,0)):
+    #TODO json output
     freport_write_single(names, radii, 'FractureNamesAndRadii.txt')
     freport_write_triple(names, centers, 'FractureNamesAndCenters.txt')
-
+    names_i, radii_i = fracture_centers_inside(names, radii, centers, edge_length, midpt)
+    freport_write_single(names_i, radii_i, 'FractureNamesAndRadiiInside.txt')
 
 def create_dfn(settings):
     """
@@ -212,7 +233,7 @@ def create_dfn(settings):
     guids.fractures = fsrf_ids
     intersect_surfaces(guids)
     update_views()
-    freport(fnames, radii, centers)
+    freport(fnames, radii, centers, settings['HL3']*2.)
 
 
 if __name__ == '__main__':
