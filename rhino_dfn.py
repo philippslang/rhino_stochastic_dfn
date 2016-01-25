@@ -43,8 +43,6 @@ def intersect_surfaces(guids):
             rs.AddPoint(rs.CurveStartPoint(intid))
             rs.AddPoint(rs.CurveEndPoint(intid))
 
-    
-
 
 def document():
     """Brute-force new document, discard all unsaved changes."""
@@ -210,6 +208,11 @@ def freport(names, radii, centers, edge_length, midpt=(0,0,0)):
     names_i, radii_i = fracture_centers_inside(names, radii, centers, edge_length, midpt)
     freport_write_single(names_i, radii_i, 'FractureNamesAndRadiiInside.txt')
 
+
+def save(fname='csp'):
+    rs.Command('_-SaveAs Version 3 '+fname+'.3dm')
+
+
 def create_dfn(settings):
     """
     Settings:
@@ -234,7 +237,7 @@ def create_dfn(settings):
     intersect_surfaces(guids)
     update_views()
     freport(fnames, radii, centers, settings['HL3']*2.)
-
+    save()
 
 if __name__ == '__main__':
     with open('rhino_settings.json', 'r') as f:
