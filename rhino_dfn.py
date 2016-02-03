@@ -110,8 +110,9 @@ def uniform_centers(N, edge_length, midpt):
 
 def uniform_normals(N):
     """Returns list of random rhino vectors."""
-    norms = [[random.random()-0.5 for i in range(N)] for xyz in range(3)]
-    pts = [rh.Geometry.Point3d(norms[0][i], norms[1][i], norms[2][i]) for i in range(N)]
+    theta = [math.pi*random.random() for i in range(N)]
+    phi = [math.acos(2.0*random.random()-1.0)/2. for i in range(N)]
+    pts = [rh.Geometry.Point3d(math.cos(theta[i])*math.sin(phi[i]), math.sin(theta[i])*math.sin(phi[i]), math.cos(phi[i])) for i in range(N)]
     origin = rh.Geometry.Point3d(0,0,0)
     return [rs.VectorUnitize(rs.VectorCreate(pts[i], origin)) for i in range(N)]
 
