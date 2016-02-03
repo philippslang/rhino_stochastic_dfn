@@ -95,16 +95,21 @@ def cube(edge_length, prefix='', midpt=(0,0,0)):
     return surf_ids
 
 
+def uniform_variates(N):
+    return [random.random() for i in range(N)]
+
+
 def power_law_variates(N, vmin, vmax, exponent):
     """Returns list of powerlaw distributed variates within bounds."""
-    yvars = [random.random() for i in range(N)]
+    yvars = uniform_variates(N)
     return [((vmax**(exponent+1.) - vmin**(exponent+1.))*y + vmin**(exponent+1.))**(1./(exponent+1.)) for y in yvars]
 
 
 def uniform_centers(N, edge_length, midpt):
     """Returns list of random rhino pts within cube of edge_length and midpoint."""
     hel = edge_length/2.
-    coords = [[midpt[xyz]+(random.random()-0.5)*2.*hel for i in range(N)] for xyz in range(3)]
+    ranvdvars = [uniform_variates(N) for xyz in range(3)]
+    coords = [[midpt[xyz]+(ranvdvars[xyz][i]-0.5)*2.*hel for i in range(N)] for xyz in range(3)]
     return [rh.Geometry.Point3d(coords[0][i], coords[1][i], coords[2][i]) for i in range(N)]
 
 
@@ -114,8 +119,10 @@ def uniform_normals(N):
     
     http://mathworld.wolfram.com/SpherePointPicking.html
     """
-    theta = [2.0*math.pi*random.random() for i in range(N)]
-    phi = [math.acos(2.0*random.random()-1.0) for i in range(N)]
+    u = uniform_variates(N)
+    v = uniform_variates(N)
+    theta = [2.0*math.pi*u[i] for i in range(N)]
+    phi = [math.acos(2.0*v[i]-1.0) for i in range(N)]
     pts = [rh.Geometry.Point3d(math.cos(theta[i])*math.sin(phi[i]), math.sin(theta[i])*math.sin(phi[i]), math.cos(phi[i])) for i in range(N)]
     origin = rh.Geometry.Point3d(0,0,0)
     return [rs.VectorCreate(pts[i], origin) for i in range(N)]
