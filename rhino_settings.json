@@ -5,12 +5,12 @@
   "rmax": 10.0, 
   "rmin": 3.33, 
   "exponent": -2.0,
-  "N": 20,
+  "N": 150,
   "seed": 1,
   "HL3 cube": false,
   "perimeter points": 0,
   "polygon": false,
   "pole intervals": 3,
   "center intervals": 20,
-  "uniform size rmax": true
+  "uniform size rmax": false
 }

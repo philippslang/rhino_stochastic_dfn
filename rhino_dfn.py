@@ -157,7 +157,7 @@ def perimeter_pts(perim_id, ptsno):
 
 def populate(radii, centers, unorms, perimpts=0, polygon=False):
     """Generates circle and surface objects on dedicated layers, name hardcoded here."""
-    lnames, srf_ids = [], []
+    lnames, srf_ids, perim_ids = [], [], []
     for i in range(len(radii)):
         lname = 'FRACTURE{:0>5d}_S'.format(i)
         lnames += [lname]
@@ -168,9 +168,10 @@ def populate(radii, centers, unorms, perimpts=0, polygon=False):
             if polygon: # delete circle and replace by polygon, this should be optimized
                 ppts.append(ppts[0]) # close polygon
                 rs.DeleteObjects([perim_id, srf_id])
-                perimp_id = rs.AddPolyline(ppts)
-                srf_id = rs.AddPlanarSrf(perimp_id)
+                perim_id = rs.AddPolyline(ppts)
+                srf_id = rs.AddPlanarSrf(perim_id)
         srf_ids.append(srf_id)
+        perim_ids.append(perim_id)
     return lnames, srf_ids
 
 
