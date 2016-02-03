@@ -6,6 +6,7 @@ import copy
 import random
 import math
 
+
 class srfc_guids:
     def __init__(self):
         self.fractures = []
@@ -56,8 +57,8 @@ def document():
 def surf(cpts):
     """Creates a surface based on points list, returns GUID.""" 
     return rs.AddSrfPt(cpts)
-    
-    
+
+
 def rect_corner_pts(midpt, edge_length, normal='x'):
     """
     Returns list of cornerpoints of a rectangle with midpoint,
@@ -95,8 +96,12 @@ def cube(edge_length, prefix='', midpt=(0,0,0)):
     return surf_ids
 
 
-def uniform_variates(N):
-    return [random.random() for i in range(N)]
+def uniform_variates(N, discrete_intervals=0):
+    if not discrete_intervals:
+        return [random.random() for i in range(N)]
+    else:
+        dx = 1./discrete_intervals
+        return [random.randint(0,discrete_intervals)*dx for i in range(N)]
 
 
 def power_law_variates(N, vmin, vmax, exponent):
@@ -105,10 +110,10 @@ def power_law_variates(N, vmin, vmax, exponent):
     return [((vmax**(exponent+1.) - vmin**(exponent+1.))*y + vmin**(exponent+1.))**(1./(exponent+1.)) for y in yvars]
 
 
-def uniform_centers(N, edge_length, midpt):
+def uniform_centers(N, edge_length, midpt, discrete_intervals=0):
     """Returns list of random rhino pts within cube of edge_length and midpoint."""
     hel = edge_length/2.
-    ranvdvars = [uniform_variates(N) for xyz in range(3)]
+    ranvdvars = [uniform_variates(N, discrete_intervals) for xyz in range(3)]
     coords = [[midpt[xyz]+(ranvdvars[xyz][i]-0.5)*2.*hel for i in range(N)] for xyz in range(3)]
     return [rh.Geometry.Point3d(coords[0][i], coords[1][i], coords[2][i]) for i in range(N)]
 
@@ -169,15 +174,6 @@ def populate(radii, centers, unorms, perimpts=0, polygon=False):
     return lnames, srf_ids
 
 
-def populate_powerlaw(N, rmin, rmax, exponent, edge_length, perimpts=0, midpt=(0,0,0), polygon=False):
-    """Populates cube space with truncated powerlaw size distributed fractures."""
-    radii = power_law_variates(N, rmin, rmax, exponent)
-    centers = uniform_centers(N, edge_length, midpt)
-    unorms = uniform_normals(N)
-    fnames, srf_ids = populate(radii, centers, unorms, perimpts, polygon)
-    return radii, centers, fnames, srf_ids
-
-
 def corner_points(edge_length, midpt=(0,0,0)):
     layer('Default')
     hel = edge_length/2.
@@ -235,7 +231,7 @@ def create_dfn(settings):
     HL3 is half-length of inner box.
     """
     document()
-    guids = srfc_guids()
+    guids, midpt = srfc_guids(), (0,0,0)
     random.seed(settings['seed'])
     bsrf_ids = cube(settings['HL1']*2.)
     guids.boxes = bsrf_ids
@@ -244,14 +240,19 @@ def create_dfn(settings):
         bsrf_ids = cube(settings['HL3']*2., '_INT')
         guids.boxes += bsrf_ids
         corner_points(settings['HL3']*2.)
-    radii, centers, fnames, fsrf_ids = populate_powerlaw(settings['N'], settings['rmin'], settings['rmax'], 
-                                                         settings['exponent'], settings['HL2']*2.,
-                                                         settings['perimeter points'], polygon=settings['polygon'])
+    if not settings['uniform size rmax']:
+        radii = power_law_variates(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'])
+    else:
+        radii = [settings['rmax'] for i in range(settings['N'])]
+    centers = uniform_centers(settings['N'], settings['HL2']*2., midpt, settings['center intervals'])
+    unorms = uniform_normals(settings['N'])
+    fnames, fsrf_ids = populate(radii, centers, unorms, settings['perimeter points'], settings['polygon'])
     guids.fractures = fsrf_ids
     intersect_surfaces(guids)
     update_views()
     freport(fnames, radii, centers, settings['HL3']*2.)
     save()
+
 
 if __name__ == '__main__':
     with open('rhino_settings.json', 'r') as f:
