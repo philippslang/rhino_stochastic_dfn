@@ -1,16 +1,16 @@
 {
   "HL1": 45.0,
   "HL2": 30.0,
-  "HL3": 20.0,  
-  "rmax": 10.0, 
-  "rmin": 3.33, 
-  "exponent": -2.0,
-  "N": 150,
-  "seed": 1,
-  "HL3 cube": false,
-  "perimeter points": 0,
-  "polygon": false,
-  "pole intervals": 3,
-  "center intervals": 20,
-  "uniform size rmax": false
+  "HL3": 20.0,              
+  "rmax": 10.0,               
+  "rmin": 3.33,                
+  "exponent": -2.0,           
+  "N": 150,                    
+  "seed": 0,                  
+  "HL3 cube": false,           
+  "perimeter points": 0,      
+  "polygon": false,       
+  "pole intervals": 2,        
+  "center intervals": 0,      
+  "uniform size rmax": false 
 }

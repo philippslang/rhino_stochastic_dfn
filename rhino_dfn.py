@@ -5,7 +5,7 @@ import json
 import copy
 import random
 import math
-
+import os
 
 class srfc_guids:
     def __init__(self):
@@ -140,14 +140,12 @@ def fracture_perimeter(plane, radius):
     return perim, perim_id
 
 
-def fracture(radius, cener_pt, unormal):
+def fracture_surface(perim):
     """Adds fracture curve and surface, dispatches to fracture_perimeter for shape."""
-    plane = rs.PlaneFromNormal(cener_pt, unormal)
-    perim, perim_id = fracture_perimeter(plane, radius)
     perim_nrbs = perim.ToNurbsCurve()  
     srf = rh.Geometry.Brep.CreatePlanarBreps(perim_nrbs)[0]
     srf_id = sc.doc.Objects.AddBrep(srf)
-    return perim_id, srf_id
+    return srf_id
 
 
 def perimeter_pts(perim_id, ptsno):
@@ -159,10 +157,13 @@ def populate(radii, centers, unorms, perimpts=0, polygon=False):
     """Generates circle and surface objects on dedicated layers, name hardcoded here."""
     lnames, srf_ids, perim_ids = [], [], []
     for i in range(len(radii)):
+        layer('PERIMS')
+        plane = rs.PlaneFromNormal(centers[i], unorms[i])
+        perim, perim_id = fracture_perimeter(plane, radii[i])
         lname = 'FRACTURE{:0>5d}_S'.format(i)
-        lnames += [lname]
+        lnames += [lname] 
         layer(lname)
-        perim_id, srf_id = fracture(radii[i], centers[i], unorms[i])
+        srf_id = fracture_surface(perim)
         if perimpts:
             ppts = perimeter_pts(perim_id, perimpts)
             if polygon: # delete circle and replace by polygon, this should be optimized
@@ -212,13 +213,39 @@ def fracture_centers_inside(names, radii, centers, edge_length, midpt=(0,0,0)):
     return names_i, radii_i
 
 
-def freport(names, radii, centers, edge_length, midpt=(0,0,0)):
+def feport_json(names, radii, names_i, centers, unorms):
+    fname = 'rhino_results.json'
+    if os.path.isfile(fname):
+        with open(fname) as f:
+            results = json.load(f)
+    else:
+        results = dict()
+    if 'network' not in results:
+        results['network'] = dict()
+    nresults = results['network']
+    nresults['fracture centers inside L3'] = len(names_i)
+    nresults['fracture centers total'] = len(names)
+    if 'fractures' not in results:
+        results['fractures'] = dict()
+    fresults = results['fractures']
+    for i, n in enumerate(names):
+        if n not in fresults:
+            fresults[n] = dict()
+        sfresults = fresults[n]
+        sfresults['unit normal'] = [unorms[i][j] for j in range(3)]
+        sfresults['center'] = [centers[i][j] for j in range(3)]
+        sfresults['radius'] = radii[i]
+    with open(fname, 'w') as f:
+        f.write(json.dumps(results, indent=2, sort_keys=True))
+
+
+def freport(names, radii, centers, edge_length, unorms, midpt=(0,0,0)):
     #TODO json output
     freport_write_single(names, radii, 'FractureNamesAndRadii.txt')
     freport_write_triple(names, centers, 'FractureNamesAndCenters.txt')
     names_i, radii_i = fracture_centers_inside(names, radii, centers, edge_length, midpt)
     freport_write_single(names_i, radii_i, 'FractureNamesAndRadiiInside.txt')
-
+    feport_json(names, radii, names_i, centers, unorms)
 
 def save(fname='csp'):
     rs.Command('_-SaveAs Version 3 '+fname+'.3dm')
@@ -251,7 +278,7 @@ def create_dfn(settings):
     guids.fractures = fsrf_ids
     intersect_surfaces(guids)
     update_views()
-    freport(fnames, radii, centers, settings['HL3']*2.)
+    freport(fnames, radii, centers, settings['HL3']*2., unorms)
     save()
 
 
