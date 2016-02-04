@@ -122,12 +122,12 @@ def uniform_normals(N, discrete_intervals=0):
     """
     Returns list of random rhino vectors.
     
-    http://mathworld.wolfram.com/SpherePointPicking.html
+    http://mathworld.wolfram.com/SpherePointPicking.html, but with bottom half of sphere only.
     """
     u = uniform_variates(N, discrete_intervals)
     v = uniform_variates(N, discrete_intervals)
     theta = [2.0*math.pi*u[i] for i in range(N)]
-    phi = [math.acos(2.0*v[i]-1.0) for i in range(N)]
+    phi = [math.acos(2.0*v[i]-1.0)/2.+math.pi/2. for i in range(N)]
     pts = [rh.Geometry.Point3d(math.cos(theta[i])*math.sin(phi[i]), math.sin(theta[i])*math.sin(phi[i]), math.cos(phi[i])) for i in range(N)]
     origin = rh.Geometry.Point3d(0,0,0)
     return [rs.VectorCreate(pts[i], origin) for i in range(N)]

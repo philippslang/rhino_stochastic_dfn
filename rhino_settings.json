@@ -8,7 +8,7 @@
   "N": 150,                    
   "seed": 0,                  
   "HL3 cube": false,           
-  "perimeter points": 0,      
+  "perimeter points": 6,      
   "polygon": false,       
   "pole intervals": 4,        
   "center intervals": 0,      

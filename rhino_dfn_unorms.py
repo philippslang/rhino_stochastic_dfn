@@ -14,6 +14,7 @@ def update_views():
 def fracture_poles(unorms):
     [rs.AddPoint(unorm) for unorm in unorms]
 
+
 def document():
     """Brute-force new document, discard all unsaved changes."""
     rs.DocumentModified(False)
