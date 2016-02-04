@@ -7,6 +7,7 @@ import random
 import math
 import os
 
+
 class srfc_guids:
     def __init__(self):
         self.fractures = []
@@ -39,12 +40,13 @@ def intersect_surfaces(guids):
     rs.Command('_Intersect', echo=False)
     frac_isect_ids = rs.LastCreatedObjects()
     rs.UnselectAllObjects()
-    for intid in frac_isect_ids:
-        if rs.IsCurve(intid):
-            rs.AddPoint(rs.CurveStartPoint(intid))
-            rs.AddPoint(rs.CurveEndPoint(intid))
-    rs.SelectObjects(frac_isect_ids)
-    rs.Command('_Intersect', echo=False)
+    if frac_isect_ids:
+        for intid in frac_isect_ids:
+            if rs.IsCurve(intid):
+                rs.AddPoint(rs.CurveStartPoint(intid))
+                rs.AddPoint(rs.CurveEndPoint(intid))
+        rs.SelectObjects(frac_isect_ids)
+        rs.Command('_Intersect', echo=False)
 
 
 def document():
@@ -125,6 +127,8 @@ def uniform_normals(N, discrete_intervals=0):
     http://mathworld.wolfram.com/SpherePointPicking.html, but with bottom half of sphere only.
     """
     u = uniform_variates(N, discrete_intervals)
+    if discrete_intervals > 1:
+        discrete_intervals -= 1
     v = uniform_variates(N, discrete_intervals)
     theta = [2.0*math.pi*u[i] for i in range(N)]
     phi = [math.acos(2.0*v[i]-1.0)/2.+math.pi/2. for i in range(N)]
@@ -169,7 +173,9 @@ def populate(radii, centers, unorms, perimpts=0, polygon=False):
             if polygon: # delete circle and replace by polygon, this should be optimized
                 ppts.append(ppts[0]) # close polygon
                 rs.DeleteObjects([perim_id, srf_id])
+                layer('PERIMS')
                 perim_id = rs.AddPolyline(ppts)
+                layer(lname)
                 srf_id = rs.AddPlanarSrf(perim_id)
         srf_ids.append(srf_id)
         perim_ids.append(perim_id)
@@ -225,12 +231,10 @@ def feport_json(names, radii, names_i, centers, unorms):
     nresults = results['network']
     nresults['fracture centers inside L3'] = len(names_i)
     nresults['fracture centers total'] = len(names)
-    if 'fractures' not in results:
-        results['fractures'] = dict()
+    results['fractures'] = dict()
     fresults = results['fractures']
     for i, n in enumerate(names):
-        if n not in fresults:
-            fresults[n] = dict()
+        fresults[n] = dict()
         sfresults = fresults[n]
         sfresults['unit normal'] = [unorms[i][j] for j in range(3)]
         sfresults['center'] = [centers[i][j] for j in range(3)]
