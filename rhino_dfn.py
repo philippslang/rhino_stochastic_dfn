@@ -118,14 +118,14 @@ def uniform_centers(N, edge_length, midpt, discrete_intervals=0):
     return [rh.Geometry.Point3d(coords[0][i], coords[1][i], coords[2][i]) for i in range(N)]
 
 
-def uniform_normals(N):
+def uniform_normals(N, discrete_intervals=0):
     """
     Returns list of random rhino vectors.
     
     http://mathworld.wolfram.com/SpherePointPicking.html
     """
-    u = uniform_variates(N)
-    v = uniform_variates(N)
+    u = uniform_variates(N, discrete_intervals)
+    v = uniform_variates(N, discrete_intervals)
     theta = [2.0*math.pi*u[i] for i in range(N)]
     phi = [math.acos(2.0*v[i]-1.0) for i in range(N)]
     pts = [rh.Geometry.Point3d(math.cos(theta[i])*math.sin(phi[i]), math.sin(theta[i])*math.sin(phi[i]), math.cos(phi[i])) for i in range(N)]
@@ -273,7 +273,7 @@ def create_dfn(settings):
     else:
         radii = [settings['rmax'] for i in range(settings['N'])]
     centers = uniform_centers(settings['N'], settings['HL2']*2., midpt, settings['center intervals'])
-    unorms = uniform_normals(settings['N'])
+    unorms = uniform_normals(settings['N'], settings['pole intervals'])
     fnames, fsrf_ids = populate(radii, centers, unorms, settings['perimeter points'], settings['polygon'])
     guids.fractures = fsrf_ids
     intersect_surfaces(guids)

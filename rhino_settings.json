@@ -10,7 +10,7 @@
   "HL3 cube": false,           
   "perimeter points": 0,      
   "polygon": false,       
-  "pole intervals": 2,        
+  "pole intervals": 4,        
   "center intervals": 0,      
   "uniform size rmax": false 
 }
