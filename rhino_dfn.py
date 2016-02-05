@@ -131,7 +131,7 @@ def uniform_normals(N, discrete_intervals=0):
         discrete_intervals -= 1
     v = uniform_variates(N, discrete_intervals)
     theta = [2.0*math.pi*u[i] for i in range(N)]
-    phi = [math.acos(2.0*v[i]-1.0)/2.+math.pi/2. for i in range(N)]
+    phi = [(math.acos(2.0*v[i]-1.0)+math.pi)/2. for i in range(N)]
     pts = [rh.Geometry.Point3d(math.cos(theta[i])*math.sin(phi[i]), math.sin(theta[i])*math.sin(phi[i]), math.cos(phi[i])) for i in range(N)]
     origin = rh.Geometry.Point3d(0,0,0)
     return [rs.VectorCreate(pts[i], origin) for i in range(N)]
@@ -157,23 +157,51 @@ def perimeter_pts(perim_id, ptsno):
     return rs.DivideCurve(perim_id, ptsno, create_points=True)
 
 
+def uniform_centers_normals(radii, edge_length, midpt, perim_dist_min):
+    """Generates centers and normals such that no two perimeter curves are closer than perim_dist_min."""
+    origin, hel = rh.Geometry.Point3d(0,0,0), edge_length/2.
+    perim_ids, centers, unorms, tries = [], [], [], 0
+    for r in radii:
+        tries += 1
+        if tries > len(radii)*20:
+            raise RuntimeError('exceeded max iterations to find permissible center-normal combination')
+        theta, phi = 2.0*math.pi*random.random(), (math.acos(2.0*random.random()-1.0)+math.pi)/2.
+        pt_unit_sphere = rh.Geometry.Point3d(math.cos(theta)*math.sin(phi), math.sin(theta)*math.sin(phi), math.cos(phi))
+        unorm = rs.VectorCreate(pt_unit_sphere, origin)
+        cxyz = [midpt[xyz]+(random.random()-0.5)*2.*hel for xyz in range(3)]
+        center = rh.Geometry.Point3d(cxyz[0], cxyz[1], cxyz[2])
+        plane = rs.PlaneFromNormal(center, unorm)
+        perim, perim_id = fracture_perimeter(plane, r)
+        if perim_ids:
+            res = rs.CurveClosestObject(perim_id, perim_ids)
+            if res:
+                mindistv = rs.VectorCreate(res[1], res[2])
+                if rs.VectorLength(mindistv) < perim_dist_min:
+                    continue
+        perim_ids.append(perim_id)
+        centers.append(center)
+        unorms.append(unorm)
+    return centers, unorms 
+
+
 def populate(radii, centers, unorms, perimpts=0, polygon=False):
     """Generates circle and surface objects on dedicated layers, name hardcoded here."""
     lnames, srf_ids, perim_ids = [], [], []
     for i in range(len(radii)):
-        layer('PERIMS')
-        plane = rs.PlaneFromNormal(centers[i], unorms[i])
-        perim, perim_id = fracture_perimeter(plane, radii[i])
         lname = 'FRACTURE{:0>5d}_S'.format(i)
-        lnames += [lname] 
+        lnames += [lname]
+        #layer('PERIMS')
         layer(lname)
+        plane = rs.PlaneFromNormal(centers[i], unorms[i])
+        perim, perim_id = fracture_perimeter(plane, radii[i])         
+        #layer(lname)
         srf_id = fracture_surface(perim)
         if perimpts:
             ppts = perimeter_pts(perim_id, perimpts)
             if polygon: # delete circle and replace by polygon, this should be optimized
                 ppts.append(ppts[0]) # close polygon
                 rs.DeleteObjects([perim_id, srf_id])
-                layer('PERIMS')
+                #layer('PERIMS')
                 perim_id = rs.AddPolyline(ppts)
                 layer(lname)
                 srf_id = rs.AddPlanarSrf(perim_id)
@@ -251,6 +279,7 @@ def freport(names, radii, centers, edge_length, unorms, midpt=(0,0,0)):
     freport_write_single(names_i, radii_i, 'FractureNamesAndRadiiInside.txt')
     feport_json(names, radii, names_i, centers, unorms)
 
+
 def save(fname='csp'):
     rs.Command('_-SaveAs Version 3 '+fname+'.3dm')
 
@@ -276,8 +305,11 @@ def create_dfn(settings):
         radii = power_law_variates(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'])
     else:
         radii = [settings['rmax'] for i in range(settings['N'])]
-    centers = uniform_centers(settings['N'], settings['HL2']*2., midpt, settings['center intervals'])
-    unorms = uniform_normals(settings['N'], settings['pole intervals'])
+    if not settings['perimeter distance min']:
+        centers = uniform_centers(settings['N'], settings['HL2']*2., midpt, settings['center intervals'])
+        unorms = uniform_normals(settings['N'], settings['pole intervals'])
+    else:
+        centers, unorms  = uniform_centers_normals(radii, settings['HL2']*2., midpt, settings['perimeter distance min'])
     fnames, fsrf_ids = populate(radii, centers, unorms, settings['perimeter points'], settings['polygon'])
     guids.fractures = fsrf_ids
     intersect_surfaces(guids)
