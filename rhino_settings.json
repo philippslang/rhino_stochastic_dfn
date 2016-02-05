@@ -5,7 +5,7 @@
   "rmax": 10.0,               
   "rmin": 3.33,                
   "exponent": -2.0,           
-  "N": 3,                    
+  "N": 10,                    
   "seed": 6,                  
   "HL3 cube": false,           
   "perimeter points": 0,
@@ -13,5 +13,5 @@
   "pole intervals": 0,        
   "center intervals": 0,      
   "uniform size rmax": false,
-  "perimeter distance min": 1.0
+  "perimeter distance min": 1.5
 }

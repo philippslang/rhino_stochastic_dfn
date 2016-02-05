@@ -45,8 +45,9 @@ def intersect_surfaces(guids):
             if rs.IsCurve(intid):
                 rs.AddPoint(rs.CurveStartPoint(intid))
                 rs.AddPoint(rs.CurveEndPoint(intid))
-        rs.SelectObjects(frac_isect_ids)
-        rs.Command('_Intersect', echo=False)
+        if len(frac_isect_ids) > 1:
+            rs.SelectObjects(frac_isect_ids)
+            rs.Command('_Intersect', echo=False)
 
 
 def document():
@@ -162,25 +163,31 @@ def uniform_centers_normals(radii, edge_length, midpt, perim_dist_min):
     origin, hel = rh.Geometry.Point3d(0,0,0), edge_length/2.
     perim_ids, centers, unorms, tries = [], [], [], 0
     for r in radii:
-        tries += 1
-        if tries > len(radii)*20:
-            raise RuntimeError('exceeded max iterations to find permissible center-normal combination')
-        theta, phi = 2.0*math.pi*random.random(), (math.acos(2.0*random.random()-1.0)+math.pi)/2.
-        pt_unit_sphere = rh.Geometry.Point3d(math.cos(theta)*math.sin(phi), math.sin(theta)*math.sin(phi), math.cos(phi))
-        unorm = rs.VectorCreate(pt_unit_sphere, origin)
-        cxyz = [midpt[xyz]+(random.random()-0.5)*2.*hel for xyz in range(3)]
-        center = rh.Geometry.Point3d(cxyz[0], cxyz[1], cxyz[2])
-        plane = rs.PlaneFromNormal(center, unorm)
-        perim, perim_id = fracture_perimeter(plane, r)
-        if perim_ids:
-            res = rs.CurveClosestObject(perim_id, perim_ids)
-            if res:
-                mindistv = rs.VectorCreate(res[1], res[2])
-                if rs.VectorLength(mindistv) < perim_dist_min:
-                    continue
+        iterations = 0
+        while 1:            
+            if iterations > len(radii)*100:
+                raise RuntimeError('exceeded max iterations to find permissible center-normal combination')
+            theta, phi = 2.0*math.pi*random.random(), (math.acos(2.0*random.random()-1.0)+math.pi)/2.
+            pt_unit_sphere = rh.Geometry.Point3d(math.cos(theta)*math.sin(phi), math.sin(theta)*math.sin(phi), math.cos(phi))
+            unorm = rs.VectorCreate(pt_unit_sphere, origin)
+            cxyz = [midpt[xyz]+(random.random()-0.5)*2.*hel for xyz in range(3)]
+            center = rh.Geometry.Point3d(cxyz[0], cxyz[1], cxyz[2])
+            plane = rs.PlaneFromNormal(center, unorm)
+            perim, perim_id = fracture_perimeter(plane, r)
+            if perim_ids:
+                res = rs.CurveClosestObject(perim_id, perim_ids)
+                if res:
+                    mindistv = rs.VectorCreate(res[1], res[2])
+                    if rs.VectorLength(mindistv) > perim_dist_min:
+                        break
+            else:
+                break
+            rs.DeleteObject(perim_id)
+            iterations += 1
         perim_ids.append(perim_id)
         centers.append(center)
         unorms.append(unorm)
+    rs.DeleteObjects(perim_ids)
     return centers, unorms 
 
 
