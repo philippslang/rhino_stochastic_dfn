@@ -291,7 +291,7 @@ def save(fname='csp'):
     rs.Command('_-SaveAs Version 3 '+fname+'.3dm')
 
 
-def create_dfn(settings, seed, fname):
+def create_dfn(settings, seed, fname='csp'):
     """
     Settings:
     HL1 is half-length of outer box.
@@ -322,16 +322,26 @@ def create_dfn(settings, seed, fname):
     intersect_surfaces(guids)
     update_views()
     freport(fnames, radii, centers, settings['HL3']*2., unorms)
-    save()
+    save(fname)
 
 
 if __name__ == '__main__':
     with open('rhino_settings.json', 'r') as f:
         settings = json.load(f)
     if settings['realizations'] < 2:
-        create_dfn(settings, settings['seed'], 'csp')
+        create_dfn(settings, settings['seed'])
     else:
-        model, seed = 0, settings['seed']
-        fname = 'csp_'+str(model)
-        create_dfn(settings, seed, fname)
-        seed += 1
+        n, seed = settings['realizations'], settings['seed']
+        bdir = os.getcwd()
+        for i in range(n):
+            os.chdir(bdir)
+            rdir = 'csp_{:0>5d}'.format(i)
+            try:
+                os.mkdir(rdir)
+            except  OSError:
+                pass
+            os.chdir(rdir)
+            sdir = os.getcwd()
+            fname = '{0}\csp'.format(sdir)
+            create_dfn(settings, seed, fname)
+            seed += 1
