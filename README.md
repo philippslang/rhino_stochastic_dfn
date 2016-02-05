@@ -19,7 +19,8 @@ Controlls in `rhino_settings.json`, needs to be in wrking directory. Script call
   "polygon": false            # fracture converted from circle to n-polygon, where n = "perimeter points"
   "pole intervals": 0,        # random intervals for fracture poles in unit sphere surface space, if 0 continuous
   "center intervals": 0,      # random intervals for fracture poles in unit sphere surface space, if 0 continuous
-  "uniform size rmax": false  # uniform fracture size (no powerlaw) of rmax
+  "uniform size rmax": false, # uniform fracture size (no powerlaw) of rmax
+  "realizations": 1           # number of models to create, if >1 creates subfolders and advances seed by 1
 }
 ```
 
