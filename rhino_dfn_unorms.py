@@ -30,12 +30,32 @@ def unit_sphere():
     return rh.Commands.Result.Failure
 
 
-if __name__ == '__main__':
+def getunorms():
     with open('rhino_results.json', 'r') as f:
-        results = json.load(f)
+            results = json.load(f)
     fresults = results['fractures']
-    unorms = [fresults[fres]['unit normal'] for fres in fresults]
+    return [fresults[fres]['unit normal'] for fres in fresults]
+
+def save(fname='poles'):
+    rs.Command('_-SaveAs '+fname+'.3dm')
+
+
+if __name__ == '__main__':
+    bdir = os.getcwd()
+    with open('rhino_settings.json', 'r') as f:
+        settings = json.load(f)
+    if settings['realizations'] < 2:
+        unorms = getunorms()
+    else:
+        n, unorms = settings['realizations'], []
+        for i in range(n):
+            os.chdir(bdir)
+            rdir = 'csp_{:0>5d}'.format(i)
+            os.chdir(rdir)
+            unorms += getunorms()
+        os.chdir(bdir)
     document()
     unit_sphere()
     fracture_poles(unorms)
     update_views()
+    save('{0}\poles'.format(bdir))
