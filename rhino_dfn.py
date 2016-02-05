@@ -165,7 +165,7 @@ def uniform_centers_normals(radii, edge_length, midpt, perim_dist_min):
     for r in radii:
         iterations = 0
         while 1:            
-            if iterations > len(radii)*100:
+            if iterations > len(radii)*300:
                 raise RuntimeError('exceeded max iterations to find permissible center-normal combination')
             theta, phi = 2.0*math.pi*random.random(), (math.acos(2.0*random.random()-1.0)+math.pi)/2.
             pt_unit_sphere = rh.Geometry.Point3d(math.cos(theta)*math.sin(phi), math.sin(theta)*math.sin(phi), math.cos(phi))
@@ -291,7 +291,7 @@ def save(fname='csp'):
     rs.Command('_-SaveAs Version 3 '+fname+'.3dm')
 
 
-def create_dfn(settings):
+def create_dfn(settings, seed, fname):
     """
     Settings:
     HL1 is half-length of outer box.
@@ -300,7 +300,7 @@ def create_dfn(settings):
     """
     document()
     guids, midpt = srfc_guids(), (0,0,0)
-    random.seed(settings['seed'])
+    random.seed(seed)
     bsrf_ids = cube(settings['HL1']*2.)
     guids.boxes = bsrf_ids
     corner_points(settings['HL1']*2.)
@@ -328,4 +328,10 @@ def create_dfn(settings):
 if __name__ == '__main__':
     with open('rhino_settings.json', 'r') as f:
         settings = json.load(f)
-    create_dfn(settings)
+    if settings['realizations'] < 2:
+        create_dfn(settings, settings['seed'], 'csp')
+    else:
+        model, seed = 0, settings['seed']
+        fname = 'csp_'+str(model)
+        create_dfn(settings, seed, fname)
+        seed += 1

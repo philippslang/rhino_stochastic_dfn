@@ -1,17 +1,18 @@
 {
   "HL1": 20.0,
-  "HL2": 6.0,
+  "HL2": 5.0,
   "HL3": 5.0,              
   "rmax": 10.0,               
   "rmin": 3.33,                
   "exponent": -2.0,           
-  "N": 10,                    
-  "seed": 6,                  
+  "N": 8,                    
+  "seed": 0,                  
   "HL3 cube": false,           
   "perimeter points": 0,
   "polygon": false,       
   "pole intervals": 0,        
   "center intervals": 0,      
   "uniform size rmax": false,
-  "perimeter distance min": 1.5
+  "perimeter distance min": 1.5,
+  "realizations": 1
 }
