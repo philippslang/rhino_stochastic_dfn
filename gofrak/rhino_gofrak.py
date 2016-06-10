@@ -16,6 +16,9 @@ class Vector:
     def __add__(self, other):
         v = [self.xyz[i]+other.xyz[i] for i in range(3)]
         return Vector(v)
+    def __sub__(self, other):
+        v = [self.xyz[i]-other.xyz[i] for i in range(3)]
+        return Vector(v)
     def __repr__(self):
         return '({0:9.3f},{1:9.3f},{2:9.3f})'.format(*self.xyz)
     def __len__(self):
@@ -24,16 +27,34 @@ class Vector:
         return self.xyz[key]
 
 
-class EllipticalFracture:
+class EllipsoidFracture:
     def __init__(self, center, nv, sv1, sv2):
         self.center = center
         self.nv = nv
         self.sv1 = sv1
         self.sv2 = sv2
     def draw(self):
-        p1 = self.center+self.sv1
-        p2 = self.center+self.sv2
-        id = rs.AddEllipse3Pt (self.center, p1, p2)
+        p1 = rs.coerce3dpoint(self.center+self.sv1)
+        p2 = rs.coerce3dpoint(self.center+self.sv2)
+        perim = rh.Geometry.Ellipse(rs.coerce3dpoint(self.center), p1, p2)
+        perim_id = sc.doc.Objects.AddEllipse(perim)
+        perim_nrbs = perim.ToNurbsCurve()  
+        srf = rh.Geometry.Brep.CreatePlanarBreps(perim_nrbs)[0]
+        srf_id = sc.doc.Objects.AddBrep(srf)
+
+
+class RectangleFracture(EllipsoidFracture):
+    def draw(self):
+        plane = rs.PlaneFromNormal(rs.coerce3dpoint(self.center), self.nv)
+        p1 = rs.coerce3dpoint(self.center+self.sv1+self.sv2)
+        p2 = rs.coerce3dpoint(self.center-self.sv1-self.sv2)
+        p3 = rs.coerce3dpoint(self.center+self.sv1-self.sv2)
+        p4 = rs.coerce3dpoint(self.center-self.sv1+self.sv2)
+        perim = rh.Geometry.Polyline([p1,p4,p2,p3,p1])
+        perim_id = sc.doc.Objects.AddPolyline(perim)
+        perim_nrbs = perim.ToNurbsCurve()
+        srf = rh.Geometry.Brep.CreatePlanarBreps(perim_nrbs)[0]
+        srf_id = sc.doc.Objects.AddBrep(srf)
 
 
 def draw_fractures(fractures):
@@ -41,12 +62,15 @@ def draw_fractures(fractures):
         f.draw()
 
 
-def elliptical_fracture(data):
+def to_fracture(data, id):
     center = Vector(data[0:3])
     nv = Vector(data[3:6])
     sv1 = Vector(data[6:9])
     sv2 = Vector(data[9:12])
-    return EllipticalFracture(center,nv,sv1,sv2)
+    if id == 'ellipsoid':
+        return EllipsoidFracture(center,nv,sv1,sv2)
+    else:
+        return RectangleFracture(center,nv,sv1,sv2)
 
 
 def save(fname='csp'):
@@ -67,8 +91,7 @@ def gofrak2rhino(f):
         ls = l.split('\t')
         if ls[0] == 'data-set': # header line
             continue
-        if ls[1] == 'ellipse':
-            fractures.append(elliptical_fracture(ls[2:]))
+        fractures.append(to_fracture(ls[2:], ls[1]))
     draw_fractures(fractures)
 
 
