@@ -12,12 +12,14 @@ class srfc_guids:
     def __init__(self):
         self.fractures = []
         self.boxes = []
+        self.boxes_int = []
 
 
-def update_views():
-    """Applies rendering and redraws all objects."""
-    #[rs.ViewDisplayMode(view, 'Ghosted') for view in rs.ViewNames()]
-    sc.doc.Views.Redraw()
+def color_surfaces(fnames):
+    for l in fnames:
+        rs.LayerColor(l, (random.randint(0,255),
+                          random.randint(0,255),
+                          random.randint(0,255)))
 
 
 def layer(lname):
@@ -27,9 +29,18 @@ def layer(lname):
     rs.CurrentLayer(lname)
 
 
+def final_view():
+    """Applies rendering and redraws all objects."""
+    sc.doc.Views.Redraw()
+    layer('OBS')
+    for l in ['Default', 'TOP', 'BOTTOM', 'LEFT', 'RIGHT', 'FRONT', 'BACK', 'INTS', 'INTS_BOX']: 
+        rs.LayerVisible(l, False)
+    [rs.ViewDisplayMode(view, 'Ghosted') for view in rs.ViewNames()]
+
+
 def intersect_surfaces(guids):
     """Intersects all surfaces in model. Uses python cmd line, not api."""
-    update_views()
+    sc.doc.Views.Redraw()
     rs.UnselectAllObjects()
     layer('INTS_BOX')
     rs.SelectObjects(guids.boxes)
@@ -48,13 +59,29 @@ def intersect_surfaces(guids):
         if len(frac_isect_ids) > 1:
             rs.SelectObjects(frac_isect_ids)
             rs.Command('_Intersect', echo=False)
+    if rs.IsLayer('INTS_BOX_INT'):
+        layer('INTS_BOX_INT')
+        rs.UnselectAllObjects()
+        rs.SelectObjects(guids.boxes_int)
+        rs.SelectObjects(guids.fractures)
+        rs.Command('_Intersect', echo=False)
+        frac_isect_ids = rs.LastCreatedObjects()
+        rs.UnselectAllObjects()
+        if frac_isect_ids:
+            for intid in frac_isect_ids:
+                if rs.IsCurve(intid):
+                    rs.AddPoint(rs.CurveStartPoint(intid))
+                    rs.AddPoint(rs.CurveEndPoint(intid))
+            if len(frac_isect_ids) > 1:
+                rs.SelectObjects(frac_isect_ids)
+                rs.Command('_Intersect', echo=False)
 
 
 def document():
     """Brute-force new document, discard all unsaved changes."""
     rs.DocumentModified(False)
     rs.Command('_-New _None')
-    update_views()
+    sc.doc.Views.Redraw()
 
 
 def surf(cpts):
@@ -218,7 +245,6 @@ def populate(radii, centers, unorms, perimpts=0, polygon=False):
 
 
 def corner_points(edge_length, midpt=(0,0,0)):
-    layer('Default')
     hel = edge_length/2.
     rs.AddPoint((midpt[0]+hel,midpt[1]+hel,midpt[2]+hel))
     rs.AddPoint((midpt[0]+hel,midpt[1]+hel,midpt[2]-hel))
@@ -279,7 +305,6 @@ def feport_json(names, radii, names_i, centers, unorms):
 
 
 def freport(names, radii, centers, edge_length, unorms, midpt=(0,0,0)):
-    #TODO json output
     freport_write_single(names, radii, 'FractureNamesAndRadii.txt')
     freport_write_triple(names, centers, 'FractureNamesAndCenters.txt')
     names_i, radii_i = fracture_centers_inside(names, radii, centers, edge_length, midpt)
@@ -303,10 +328,12 @@ def create_dfn(settings, seed, fname='csp'):
     random.seed(seed)
     bsrf_ids = cube(settings['HL1']*2.)
     guids.boxes = bsrf_ids
+    layer('INTS_BOX')
     corner_points(settings['HL1']*2.)
     if settings['HL3 cube']:
         bsrf_ids = cube(settings['HL3']*2., '_INT')
-        guids.boxes += bsrf_ids
+        guids.boxes_int = bsrf_ids
+        layer('INTS_BOX_INT')
         corner_points(settings['HL3']*2.)
     if not settings['uniform size rmax']:
         radii = power_law_variates(settings['N'], settings['rmin'], settings['rmax'], settings['exponent'])
@@ -320,9 +347,10 @@ def create_dfn(settings, seed, fname='csp'):
     fnames, fsrf_ids = populate(radii, centers, unorms, settings['perimeter points'], settings['polygon'])
     guids.fractures = fsrf_ids
     intersect_surfaces(guids)
-    update_views()
+    color_surfaces(fnames)
     freport(fnames, radii, centers, settings['HL3']*2., unorms)
     save(fname)
+    #final_view()
 
 
 if __name__ == '__main__':
@@ -335,7 +363,7 @@ if __name__ == '__main__':
         bdir = os.getcwd()
         for i in range(n):
             os.chdir(bdir)
-            rdir = 'csp_{:0>5d}'.format(i)
+            rdir = 'csp_{:0>5d}'.format(seed)
             try:
                 os.mkdir(rdir)
             except  OSError:

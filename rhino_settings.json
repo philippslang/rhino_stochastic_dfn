@@ -6,13 +6,13 @@
   "rmin": 3.33,                
   "exponent": -2.0,           
   "N": 8,                    
-  "seed": 0,                  
-  "HL3 cube": false,           
+  "seed": 500,                  
+  "HL3 cube": true,           
   "perimeter points": 0,
   "polygon": false,       
   "pole intervals": 0,        
   "center intervals": 0,      
   "uniform size rmax": false,
   "perimeter distance min": 1.5,
-  "realizations": 25
+  "realizations": 100
 }
