@@ -4,6 +4,24 @@ import scriptcontext as sc
 import json, copy, random, math, os, glob
 
 
+def intersections():
+    """Intersects all surfaces in model. Uses python cmd line, not api."""
+    sc.doc.Views.Redraw()
+    layer('INTERSECTIONS')
+    objs = rs.AllObjects()
+    rs.SelectObjects(objs)
+    rs.Command('_Intersect', echo=False)
+    frac_isect_ids = rs.LastCreatedObjects()
+    rs.UnselectAllObjects()
+    if frac_isect_ids:
+        for intid in frac_isect_ids:
+            if rs.IsCurve(intid):
+                rs.AddPoint(rs.CurveStartPoint(intid))
+                rs.AddPoint(rs.CurveEndPoint(intid))
+        if len(frac_isect_ids) > 1:
+            rs.SelectObjects(frac_isect_ids)
+            rs.Command('_Intersect', echo=False)
+
 class Vector:
     def __init__(self, x, y, z):
         self.xyz = [float(x),float(x),float(x)]
@@ -55,7 +73,10 @@ class RectangleFracture(EllipsoidFracture):
         p2 = rs.coerce3dpoint(self.center-self.sv1-self.sv2)
         p3 = rs.coerce3dpoint(self.center+self.sv1-self.sv2)
         p4 = rs.coerce3dpoint(self.center-self.sv1+self.sv2)
-        draw_rectangle([p1,p4,p2,p3,p1])
+        pts = [p1,p4,p2,p3,p1]
+        draw_rectangle(pts)
+        for pt in pts[0:-1]:
+            sc.doc.Objects.AddPoint(pt)
 
 
 class FractureSet:
@@ -166,6 +187,7 @@ def gofrak2rhino(f,j):
     bbpts = [rh.Geometry.Point3d(*j['bounding box'][mm]) for mm in ['min','max']]
     layer('STANDARD')
     draw_bounding_box(bbpts)
+    intersections()
 
 
 if __name__ == '__main__':
@@ -174,7 +196,6 @@ if __name__ == '__main__':
     
     fnames = ['stats_Dfn_sim1.txt', 'stats_Dfn_sim2.txt']
     fnames = glob.glob('stats_Dfn*.txt')
-    print fnames
     
     for fname in fnames:
         os.chdir(bd)
@@ -185,14 +206,12 @@ if __name__ == '__main__':
         if not os.path.isfile(lsfname):
             lsfname = gsfname
         with open(gsfname, 'r') as f:
-            j = json.load(f)
-        # create a directory for the rhino file
-        try:
+            j = json.load(f)        
+        try: # create a directory for the rhino file
             os.mkdir(fname_base)
         except  OSError:
-            pass
-        # step in and run
-        os.chdir(fname_base)
+            pass        
+        os.chdir(fname_base) # step in and run
         sd = os.getcwd()
         new_document()
         with open(os.path.join(bd, fname), 'r') as f:        
