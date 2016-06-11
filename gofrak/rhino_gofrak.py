@@ -177,7 +177,8 @@ if __name__ == '__main__':
     print fnames
     
     for fname in fnames:
-        new_document()
+        os.chdir(bd)
+        fname_base = fname.replace('.txt','')
         # if a json file with same prifx as gofrak file is
         # found, this is used as settings file. gsfname otherwise
         lsfname = fname.replace('.txt','.json')
@@ -185,7 +186,15 @@ if __name__ == '__main__':
             lsfname = gsfname
         with open(gsfname, 'r') as f:
             j = json.load(f)
-        with open(fname, 'r') as f:        
+        # create a directory for the rhino file
+        try:
+            os.mkdir(fname_base)
+        except  OSError:
+            pass
+        # step in and run
+        os.chdir(fname_base)
+        sd = os.getcwd()
+        new_document()
+        with open(os.path.join(bd, fname), 'r') as f:        
             gofrak2rhino(f,j)
-        #save as fname with rhino ext
-        save_document(os.path.join(bd, fname.replace('.txt','')))
+        save_document(os.path.join(sd, fname_base))
