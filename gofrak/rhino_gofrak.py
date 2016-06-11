@@ -1,7 +1,7 @@
 import Rhino as rh
 import rhinoscriptsyntax as rs
 import scriptcontext as sc
-import json, copy, random, math, os
+import json, copy, random, math, os, glob
 
 
 class Vector:
@@ -58,6 +58,35 @@ class RectangleFracture(EllipsoidFracture):
         draw_rectangle([p1,p4,p2,p3,p1])
 
 
+class FractureSet:
+    def __init__(self):
+        self.f = []
+    def append(self, f):
+        self.f.append(f)
+    def __getitem__(self,i):
+        return self.f[i]
+    def __len__(self):
+        return len(self.f)
+    def draw(self):
+        for f in self.f:
+            f.draw()
+
+
+class FractureSets:
+    def __init__(self):
+        self.f = {}
+    def __setitem__(self,key,f):
+        if key in self.f:
+            self.f[key].append(f)
+        else:
+            self.f[key] = FractureSet()
+            self[key] = f
+    def draw(self):
+        for f in self.f:
+            layer(f)
+            self.f[f].draw()
+
+
 def layer(lname):
     """Changes to given layer, creates if not yet existent."""
     if not rs.IsLayer(lname):
@@ -91,9 +120,8 @@ def draw_bounding_box(min_max_pts):
         draw_rectangle(pts)
 
 
-def draw_fractures(fractures):
-    for f in fractures:
-        f.draw()
+def draw_fracture_sets(fractures):
+    fractures.draw()
 
 
 def to_fracture(data, id):
@@ -107,49 +135,57 @@ def to_fracture(data, id):
         return RectangleFracture(center,nv,sv1,sv2)
 
 
-def save(fname='csp'):
+def save_document(fname='csp'):
     """Saves current doc as v3 rhino file"""
     rs.Command('_-SaveAs Version 3 '+fname+'.3dm')
 
 
-def document():
+def new_document():
     """Brute-force new document, discard all unsaved changes."""
     rs.DocumentModified(False)
     rs.Command('_-New _None')
     sc.doc.Views.Redraw()
 
 
-def read_fractures(f):
-    fractures = []
+def read_fracture_sets(f):
+    fractures = FractureSets()
     for l in f:
         ls = l.split('\t')
         if ls[0] == 'data-set': # header line
             continue
-        fractures.append(to_fracture(ls[2:], ls[1]))
+        set_name = 'FRACTURES'
+        if ls[0] != '':
+            set_name = ls[0]
+        fractures[set_name] = to_fracture(ls[2:], ls[1])
     return fractures
 
 
-def gofrak2rhino(f,j, fn):
-    fractures = read_fractures(f)
-    layer('FRACTURES')
-    draw_fractures(fractures)
-    bbmin = rh.Geometry.Point3d(*j['bounding box']['min'])
-    bbmax = rh.Geometry.Point3d(*j['bounding box']['max'])
+def gofrak2rhino(f,j):
+    fractures = read_fracture_sets(f)
+    draw_fracture_sets(fractures)
+    bbpts = [rh.Geometry.Point3d(*j['bounding box'][mm]) for mm in ['min','max']]
     layer('STANDARD')
-    draw_bounding_box([bbmin,bbmax])
-    save(fn)
+    draw_bounding_box(bbpts)
+
 
 if __name__ == '__main__':
     bd = os.getcwd()
     gsfname = 'rhino_settings.json'
     
-    fname = 'stats_Dfn_sim1.txt'
-    #fname = 'stats_Dfn_sim2.txt'
-    document()
-    lsfname = fname.replace('.txt','.json')
-    if not os.path.isfile(lsfname):
-        lsfname = gsfname
-    with open(gsfname, 'r') as f:
-        j = json.load(f)
-    with open(fname, 'r') as f:        
-        gofrak2rhino(f,j, os.path.join(bd,fname.replace('.txt','')))
+    fnames = ['stats_Dfn_sim1.txt', 'stats_Dfn_sim2.txt']
+    fnames = glob.glob('stats_Dfn*.txt')
+    print fnames
+    
+    for fname in fnames:
+        new_document()
+        # if a json file with same prifx as gofrak file is
+        # found, this is used as settings file. gsfname otherwise
+        lsfname = fname.replace('.txt','.json')
+        if not os.path.isfile(lsfname):
+            lsfname = gsfname
+        with open(gsfname, 'r') as f:
+            j = json.load(f)
+        with open(fname, 'r') as f:        
+            gofrak2rhino(f,j)
+        #save as fname with rhino ext
+        save_document(os.path.join(bd, fname.replace('.txt','')))
