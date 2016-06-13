@@ -1,7 +1,7 @@
 import Rhino as rh
 import rhinoscriptsyntax as rs
 import scriptcontext as sc
-import json, copy, random, math, os, glob
+import json, copy, random, math, os, glob, sys
 
 
 def intersections():
@@ -21,6 +21,7 @@ def intersections():
         if len(frac_isect_ids) > 1:
             rs.SelectObjects(frac_isect_ids)
             rs.Command('_Intersect', echo=False)
+
 
 class Vector:
     def __init__(self, x, y, z):
@@ -91,6 +92,15 @@ class FractureSet:
     def draw(self):
         for f in self.f:
             f.draw()
+    def minmax_centers(self):
+        m = sys.float_info.max
+        mincomps = rh.Geometry.Point3d(m,m,m)
+        maxcomps = rh.Geometry.Point3d(-m,-m,-m)
+        for f in self.f:
+            for d in range(3):
+                mincomps[d] = min(f.center[d], mincomps[d])
+                maxcomps[d] = max(f.center[d], maxcomps[d])
+        return mincomps, maxcomps
 
 
 class FractureSets:
@@ -106,6 +116,16 @@ class FractureSets:
         for f in self.f:
             layer(f)
             self.f[f].draw()
+    def minmax_centers(self):
+        m = sys.float_info.max
+        mincomps = rh.Geometry.Point3d(m,m,m)
+        maxcomps = rh.Geometry.Point3d(-m,-m,-m)
+        for s in self.f:
+            smin, smax = self.f[s].minmax_centers()
+            for d in range(3):
+                mincomps[d] = min(smin[d], mincomps[d])
+                maxcomps[d] = max(smax[d], maxcomps[d])
+        return mincomps, maxcomps
 
 
 def layer(lname):
@@ -181,10 +201,24 @@ def read_fracture_sets(f):
     return fractures
 
 
+def minmax_fracture_centers(fracture_sets, rf=0.0):
+    mi, ma = fracture_sets.minmax_centers()
+    rfs = [(ma[d]-mi[d])*rf for d in range(3)]
+    for d in range(3):
+        mi[d] += rfs[d]
+        ma[d] -= rfs[d]
+    return mi, ma
+
+
 def gofrak2rhino(f,j):
+    """Dispatches settings, limits settings invasiveness"""
     fractures = read_fracture_sets(f)
     draw_fracture_sets(fractures)
-    bbpts = [rh.Geometry.Point3d(*j['bounding box'][mm]) for mm in ['min','max']]
+    if 'auto bounding box' in j:
+        if j['auto bounding box']:
+            bbpts = minmax_fracture_centers(fractures, j['auto bounding box reduce'])
+        else:
+            bbpts = [rh.Geometry.Point3d(*j['bounding box'][mm]) for mm in ['min','max']]
     layer('STANDARD')
     draw_bounding_box(bbpts)
     intersections()
@@ -203,10 +237,12 @@ if __name__ == '__main__':
         # if a json file with same prifx as gofrak file is
         # found, this is used as settings file. gsfname otherwise
         lsfname = fname.replace('.txt','.json')
-        if not os.path.isfile(lsfname):
-            lsfname = gsfname
-        with open(gsfname, 'r') as f:
-            j = json.load(f)        
+        try:
+            with open(lsfname, 'r') as f:
+                j = json.load(f)
+        except:
+            with open(gsfname, 'r') as f:
+                j = json.load(f)        
         try: # create a directory for the rhino file
             os.mkdir(fname_base)
         except  OSError:
