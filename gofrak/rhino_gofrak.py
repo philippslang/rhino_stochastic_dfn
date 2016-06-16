@@ -194,17 +194,17 @@ def read_fracture_sets(f):
         ls = l.split('\t')
         if ls[0] == 'data-set': # header line
             continue
-        set_name = 'FRACTURES'
+        set_name = 'FRACTURES'     
         if ls[0] != '':
-            set_name = ls[0]
-        fractures[set_name] = to_fracture(ls[2:], ls[1])
+            set_name = ls[0].replace('Dfn_sim_','').replace('_0','')
+        fractures[set_name] = to_fracture(ls[3:], ls[2])
     return fractures
 
 
 def minmax_fracture_centers(fracture_sets, rf=0.0):
     mi, ma = fracture_sets.minmax_centers()
     rfs = [(ma[d]-mi[d])*rf for d in range(3)]
-    for d in range(3):
+    for d in range(2): # xy only
         mi[d] += rfs[d]
         ma[d] -= rfs[d]
     return mi, ma
@@ -230,6 +230,7 @@ if __name__ == '__main__':
     
     fnames = ['stats_Dfn_sim1.txt', 'stats_Dfn_sim2.txt']
     fnames = glob.glob('stats_Dfn*.txt')
+    fnames = glob.glob('sim_Dfn_sim*.txt')
     
     for fname in fnames:
         os.chdir(bd)
