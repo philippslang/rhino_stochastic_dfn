@@ -3,6 +3,7 @@
 "auto bounding box reduce": 0.25,
 "fracture box":{
 "min":[0.0,0.0,0.0],
-"max":[50.0,50.0,12.0]
+"max":[50.0,50.0,12.0],
+"omit":["HPF23a"]
 }
 }

@@ -217,10 +217,14 @@ def in_bbox(pt, pts):
     return True
     
     
-def remove_fractures_outside(fsets, fbbpts):
+def remove_fractures_outside(fsets, fbbpts, omit_sets):
     rfsets = FractureSets()
     for fset in fsets:
         rfset = rfsets[fset]
+        if fset in omit_sets:
+            for f in fsets[fset]:
+                rfset.append(f)
+            continue
         for f in fsets[fset]:
             if in_bbox(f.center, fbbpts):
                 rfset.append(f)
@@ -232,7 +236,8 @@ def gofrak2rhino(f,j):
     fsets = read_fracture_sets(f)
     if 'fracture box' in j:
         fbbpts = [rh.Geometry.Point3d(*j['fracture box'][mm]) for mm in ['min','max']]
-        fsets = remove_fractures_outside(fsets, fbbpts)
+        omit_sets = j['fracture box']['omit']
+        fsets = remove_fractures_outside(fsets, fbbpts, omit_sets)
     draw_fracture_sets(fsets)
     if 'auto bounding box' in j:
         if j['auto bounding box']:
