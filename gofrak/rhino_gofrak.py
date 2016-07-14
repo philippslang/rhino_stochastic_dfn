@@ -196,7 +196,7 @@ def read_fracture_sets(f):
             continue
         set_name = 'FRACTURES'     
         if ls[0] != '':
-            set_name = ls[0].replace('Dfn_sim_','').replace('_0','').replace('_K1_Simu','')
+            set_name = ls[0].split('_')[1]
         fractures[set_name].append(to_fracture(ls[3:], ls[2]))
     return fractures
 
@@ -210,8 +210,8 @@ def minmax_fracture_centers(fracture_sets, rf=0.0):
     return mi, ma
 
 
-def in_box(pt, pts):
-    for i in rang(3):
+def in_bbox(pt, pts):
+    for i in range(3):
         if pt[i] < pts[0][i] or pt[i] > pts[1][i]:
             return False
     return True

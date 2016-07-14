@@ -1,8 +1,8 @@
 {
-"auto bounding box": false,
+"auto bounding box": true,
 "auto bounding box reduce": 0.25,
-"bounding box":{
-"min":[0.1,0.1,0.1],
-"max":[499.9,399.9,11.9]
+"fracture box":{
+"min":[0.0,0.0,0.0],
+"max":[50.0,50.0,12.0]
 }
 }
