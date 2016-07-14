@@ -106,12 +106,14 @@ class FractureSet:
 class FractureSets:
     def __init__(self):
         self.f = {}
-    def __setitem__(self,key,f):
+    def __setitem__(self, key, f):
         if key in self.f:
             self.f[key].append(f)
         else:
             self.f[key] = FractureSet()
             self[key] = f
+    def __getitem__(self, key):
+        return self.f[key]
     def draw(self):
         for f in self.f:
             layer(f)
@@ -210,9 +212,16 @@ def minmax_fracture_centers(fracture_sets, rf=0.0):
     return mi, ma
 
 
+def remove_fractures_outside(fractures, fbbpts):
+    reduced_fractures = FractureSets()
+    return  reduced_fractures
+
 def gofrak2rhino(f,j):
     """Dispatches settings, limits settings invasiveness"""
     fractures = read_fracture_sets(f)
+    if 'fracture box' in j:
+        fbbpts = [rh.Geometry.Point3d(*j['fracture box'][mm]) for mm in ['min','max']]
+        fractures = remove_fractures_outside(fractures, fbbpts)
     draw_fracture_sets(fractures)
     if 'auto bounding box' in j:
         if j['auto bounding box']:
@@ -221,7 +230,7 @@ def gofrak2rhino(f,j):
             bbpts = [rh.Geometry.Point3d(*j['bounding box'][mm]) for mm in ['min','max']]
     layer('STANDARD')
     draw_bounding_box(bbpts)
-    #intersections()
+    intersections()
 
 
 if __name__ == '__main__':
