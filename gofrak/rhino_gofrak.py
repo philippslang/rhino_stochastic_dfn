@@ -106,13 +106,9 @@ class FractureSet:
 class FractureSets:
     def __init__(self):
         self.f = {}
-    def __setitem__(self, key, f):
-        if key in self.f:
-            self.f[key].append(f)
-        else:
-            self.f[key] = FractureSet()
-            self[key] = f
     def __getitem__(self, key):
+        if key not in self.f:
+            self.f[key] = FractureSet()
         return self.f[key]
     def __iter__(self):
         return iter(self.f)
@@ -201,7 +197,7 @@ def read_fracture_sets(f):
         set_name = 'FRACTURES'     
         if ls[0] != '':
             set_name = ls[0].replace('Dfn_sim_','').replace('_0','').replace('_K1_Simu','')
-        fractures[set_name] = to_fracture(ls[3:], ls[2])
+        fractures[set_name].append(to_fracture(ls[3:], ls[2]))
     return fractures
 
 
@@ -214,10 +210,22 @@ def minmax_fracture_centers(fracture_sets, rf=0.0):
     return mi, ma
 
 
-def remove_fractures_outside(fsets, fbbpts):
-    reduced_fractures = FractureSets()
+def in_box(pt, pts):
+    for i in rang(3):
+        if pt[i] < pts[0][i] or pt[i] > pts[1][i]:
+            return False
+    return True
     
-    return  reduced_fractures
+    
+def remove_fractures_outside(fsets, fbbpts):
+    rfsets = FractureSets()
+    for fset in fsets:
+        rfset = rfsets[fset]
+        for f in fsets[fset]:
+            if in_bbox(f.center, fbbpts):
+                rfset.append(f)
+    return  rfsets
+
 
 def gofrak2rhino(f,j):
     """Dispatches settings, limits settings invasiveness"""
