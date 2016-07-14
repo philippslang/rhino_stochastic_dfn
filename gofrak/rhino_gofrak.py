@@ -196,7 +196,7 @@ def read_fracture_sets(f):
             continue
         set_name = 'FRACTURES'     
         if ls[0] != '':
-            set_name = ls[0].replace('Dfn_sim_','').replace('_0','')
+            set_name = ls[0].replace('Dfn_sim_','').replace('_0','').replace('_K1_Simu','')
         fractures[set_name] = to_fracture(ls[3:], ls[2])
     return fractures
 
@@ -221,7 +221,7 @@ def gofrak2rhino(f,j):
             bbpts = [rh.Geometry.Point3d(*j['bounding box'][mm]) for mm in ['min','max']]
     layer('STANDARD')
     draw_bounding_box(bbpts)
-    intersections()
+    #intersections()
 
 
 if __name__ == '__main__':
@@ -231,6 +231,7 @@ if __name__ == '__main__':
     fnames = ['stats_Dfn_sim1.txt', 'stats_Dfn_sim2.txt']
     fnames = glob.glob('stats_Dfn*.txt')
     fnames = glob.glob('sim_Dfn_sim*.txt')
+    fnames = glob.glob('sim_Dfn*.txt')
     
     for fname in fnames:
         os.chdir(bd)

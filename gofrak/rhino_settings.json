@@ -2,7 +2,7 @@
 "auto bounding box": false,
 "auto bounding box reduce": 0.25,
 "bounding box":{
-"min":[25,25,0.1],
-"max":[75,75,11.9]
+"min":[0.1,0.1,0.1],
+"max":[499.9,399.9,11.9]
 }
 }
